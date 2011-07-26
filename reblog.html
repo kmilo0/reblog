@@ -1,0 +1,155 @@
+<html> 
+<head> 
+    <title>Hello World</title> 	
+    <script type="text/javascript" src="AIRAliases.js"></script> 
+	
+    <script type="text/javascript" src="login.js"></script> 
+
+    <script type="text/javascript"> 
+	start=0;
+	endPost=0;
+
+	//load 25 posts: the last 5 posts, and the next 20
+	function loadDashboard(){ 			
+		var request = new air.URLRequest("http://www.tumblr.com/api/dashboard"); 					
+		
+		if(0==start) {
+			request.data = new air.URLVariables("email="+email+"&password="+password+"&start="+start+"&num=20");
+		} else if (255==start){
+			// /api/dashboard start off limit
+			alert("dashboard limit, starting again from the top");
+			dashboard.innerHTML="";
+			endPost=0;
+			start=0;
+			request.data = new air.URLVariables("email="+email+"&password="+password+"&start="+start+"&num=20");
+		} else {
+			request.data = new air.URLVariables("email="+email+"&password="+password+"&start="+start+"&num=25");
+		}
+		
+		air.trace("start: "+start);
+		
+		var loader = new air.URLLoader(); 
+		loader.addEventListener(air.Event.COMPLETE, dashboardHandler); 
+								
+		try 
+		{ 
+			loader.load(request);
+		}
+		catch (error) 
+		{ 
+			air.trace("Unable to load URL: " + error); 
+		} 
+	}  
+		
+	function dashboardHandler(event) 
+	{ 				
+		var parser = new DOMParser();
+		var xml  = parser.parseFromString(event.target.data, "text/xml");
+		var postList = xml.getElementsByTagName('post');
+		var dashboard = document.getElementById("dashboard"); 
+							
+		air.trace("endPost: "+endPost);		
+		beginNew=0;
+
+		//search the last showed post
+		if(0!=endPost){
+			for (var i=0; i<postList.length; i++) {			
+				if(postList[i].getAttribute('id')==endPost){
+					beginNew=i+1;
+					break;					
+				}
+			}
+			
+			if(0==beginNew){
+				air.trace("the last post wasn't found");				
+				for (var i=0; i<postList.length; i++) {			
+					postId=postList[i].getAttribute('id');
+					air.trace("num: " + (start+i) + " id: "+postId);					
+				}
+				air.trace();
+									
+				start=start+20;
+				loadDashboard();
+				
+				return;
+			}
+		}
+		
+		
+		air.trace("beginNew: "+beginNew);
+		
+		//show the posts
+		for (var i=beginNew; i<postList.length; i++) {			
+			postId=postList[i].getAttribute('id');
+			
+			air.trace("num: " + (start+i) + " id: "+postId);
+			if( postList[i].getAttribute('type') == "photo"){					
+				reblogKey=postList[i].getAttribute('reblog-key')
+				
+				img = document.createElement("img");
+				img.src = postList[i].getElementsByTagName('photo-url')[1].textContent;
+				dashboard.appendChild(img);
+
+				
+				br = document.createElement("br");					
+				dashboard.appendChild(br);
+
+				input = document.createElement("input");
+				input.type="submit";
+				input.value="Reblog ";
+				
+				//Nasty hack to get something like this:
+				//input.onclick = reblog(postId, reblogKey);
+				input.onclick = (function(i, j) { return function() { reblog(i, j); }; })(postId, reblogKey);
+				
+				dashboard.appendChild(input);
+				
+				hr = document.createElement("hr");
+				dashboard.appendChild(hr);
+			}				
+		}
+				
+		endPost=postId;
+				
+		if(0==start)
+			start=15;
+		else
+			start=start+20;
+		
+		air.trace();
+	}
+
+	function reblog(postId, reblogKey)
+	{
+		var request = new air.URLRequest("http://www.tumblr.com/api/reblog "); 
+		request.data = new air.URLVariables("email="+email+"&password="+password+"&post-id="+postId+"&reblog-key="+reblogKey+"&state=queue");
+		request.method = air.URLRequestMethod.POST; 
+		var loader = new air.URLLoader(); 
+		loader.addEventListener(air.Event.COMPLETE, reblogHandler); 
+								
+		try 
+		{ 
+			loader.load(request);
+		}
+		catch (error) 
+		{ 
+			air.trace("Unable to load URL: " + error); 
+		} 
+		
+	}		
+
+	
+	function reblogHandler(event) 
+	{ 	
+		air.trace("Reblog: "+event.target.data+"\n");
+	}
+		
+    </script> 
+</head> 
+<body>
+    <h1>Dashboard</h1> 		
+	<div id="dashboard">		
+	</div>	
+	<input type="submit" value="Load more" onClick="loadDashboard();"><br/>
+</body> 
+</html>
