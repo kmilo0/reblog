@@ -2,6 +2,6 @@ Proof of concept tumblr client, with one click reblog to the queue.
 
 Install:
 1) Write your credentials on login.js
-2) Install Adobe AIR: http://get.adobe.com/air/
+2) Install Adobe AIR SDK: http://www.adobe.com/products/air/sdk/
 3) Execute: adl reblog-app.xml
 4) Enjoy
